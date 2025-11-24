@@ -3,7 +3,6 @@ library mapbox_gl_web;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
-// FIXED HERE: https://github.com/dart-lang/linter/pull/1985
 import 'dart:math';
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/services.dart';
