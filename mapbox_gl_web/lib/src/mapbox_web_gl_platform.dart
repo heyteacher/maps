@@ -5,7 +5,7 @@ const _mapboxGlCssUrl =
 
 class MapboxWebGlPlatform extends MapboxGlPlatform
     implements MapboxMapOptionsSink {
-  late DivElement _mapElement;
+  late HTMLDivElement _mapElement;
 
   late Map<String, dynamic> _creationParams;
   late MapboxMap _map;
@@ -46,7 +46,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
   void _registerViewFactory(Function(int) callback, int identifier) {
     ui_web.platformViewRegistry.registerViewFactory(
         'plugins.flutter.io/mapbox_gl_$identifier', (int viewId) {
-      _mapElement = DivElement()
+      _mapElement = HTMLDivElement()
         ..style.position = 'absolute'
         ..style.top = '0'
         ..style.bottom = '0'
@@ -97,7 +97,11 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
   }
 
   void _initResizeObserver() {
-    final resizeObserver = ResizeObserver((entries, observer) {
+    final resizeObserver = ResizeObserver(_onResizeObserver.toJS);
+    resizeObserver.observe(document.body as Element);
+  }
+
+  void _onResizeObserver(JSObject entries, JSObject observer) {
       // The resize observer might be called a lot of times when the user resizes the browser window with the mouse for example.
       // Due to the fact that the resize call is quite expensive it should not be called for every triggered event but only the last one, like "onMoveEnd".
       // But because there is no event type for the end, there is only the option to spawn timers and cancel the previous ones if they get overwritten by a new event.
@@ -105,17 +109,14 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
       lastResizeObserverTimer = Timer(Duration(milliseconds: 50), () {
         _onMapResize();
       });
-    });
-    resizeObserver.observe(document.body as Element);
-  }
-
-  void _loadFromAssets(Event event) async {
+    }
+  void _loadFromAssets(event) async {
     final imagePath = event.id;
     final ByteData bytes = await rootBundle.load(imagePath);
     await addImage(imagePath, bytes.buffer.asUint8List());
   }
 
-  _onMouseDown(Event e) {
+  _onMouseDown(e) {
     var isDraggable = e.features[0].properties['draggable'];
     if (isDraggable != null && isDraggable) {
       // Prevent the default map drag behavior.
@@ -141,7 +142,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
     }
   }
 
-  _onMouseUp(Event e) {
+  _onMouseUp(e) {
     if (_draggedFeatureId != null) {
       final current = LatLng(e.lngLat.lat.toDouble(), e.lngLat.lng.toDouble());
       final payload = {
@@ -160,7 +161,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
     _map.getCanvas().style.cursor = '';
   }
 
-  _onMouseMove(Event e) {
+  _onMouseMove(e) {
     if (_draggedFeatureId != null) {
       final current = LatLng(e.lngLat.lat.toDouble(), e.lngLat.lng.toDouble());
       final payload = {
@@ -176,13 +177,13 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
     }
   }
 
-  Future<void> _addStylesheetToShadowRoot(HtmlElement e) async {
-    LinkElement link = LinkElement()
+  Future<void> _addStylesheetToShadowRoot(HTMLElement e) async {
+    HTMLLinkElement link = HTMLLinkElement()
       ..href = _mapboxGlCssUrl
-      ..rel = 'stylesheet';
-    e.append(link);
+      ..rel = 'stylesheet';    
+      e.append(link);
 
-    await link.onLoad.first;
+    //await link.onLoad.first;
   }
 
   @override
@@ -198,11 +199,11 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
       {Duration? duration}) async {
     final cameraOptions = Convert.toCameraOptions(cameraUpdate, _map);
 
-    final around = getProperty(cameraOptions, 'around');
-    final bearing = getProperty(cameraOptions, 'bearing');
-    final center = getProperty(cameraOptions, 'center');
-    final pitch = getProperty(cameraOptions, 'pitch');
-    final zoom = getProperty(cameraOptions, 'zoom');
+    final around = jsUtil.getProperty(cameraOptions, 'around');
+    final bearing = jsUtil.getProperty(cameraOptions, 'bearing');
+    final center = jsUtil.getProperty(cameraOptions, 'center');
+    final pitch = jsUtil.getProperty(cameraOptions, 'pitch');
+    final zoom = jsUtil.getProperty(cameraOptions, 'zoom');
 
     _map.flyTo({
       if (around.jsObject != null) 'around': around,
@@ -231,7 +232,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
 
   @override
   Future<void> matchMapLanguageWithDeviceDefault() async {
-    setMapLanguage(ui.window.locale.languageCode);
+    setMapLanguage(WidgetsBinding.instance.platformDispatcher.locale.languageCode);
   }
 
   @override
@@ -389,7 +390,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
     });
   }
 
-  void _onMapClick(Event e) {
+  void _onMapClick(e) {
     final features = _map.queryRenderedFeatures([e.point.x, e.point.y],
         {"layers": _interactiveFeatureLayerIds.toList()});
     final payload = {
