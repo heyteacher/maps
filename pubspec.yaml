@@ -26,11 +26,11 @@ dependency_overrides:
 flutter:
   plugin:
     platforms:
-      android:
-        package: com.mapbox.mapboxgl
-        pluginClass: MapboxMapsPlugin
-      ios:
-        pluginClass: MapboxMapsPlugin
+      #android:
+      #  package: com.mapbox.mapboxgl
+      #  pluginClass: MapboxMapsPlugin
+      #ios:
+      #  pluginClass: MapboxMapsPlugin
       web:
         default_package: mapbox_gl_web
 
